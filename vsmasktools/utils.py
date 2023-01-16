@@ -127,13 +127,13 @@ def replace_squaremask(
 
     mask = squaremask(clipb[0], *mask_params, invert, func)
 
-    if show_mask:
-        return mask
-
     if isinstance(blur_sigma, int):
         mask = box_blur(mask, blur_sigma)
     elif isinstance(blur_sigma, float):
         mask = gauss_blur(mask, blur_sigma)
+
+    if show_mask:
+        return mask.std.Loop(clipa.num_frames)
 
     merge = clipa.std.MaskedMerge(clipb, mask.std.Loop(clipa.num_frames))
 
