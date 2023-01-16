@@ -119,13 +119,16 @@ def squaremask(
 def replace_squaremask(
     clipa: vs.VideoNode, clipb: vs.VideoNode, mask_params: tuple[int, int, int, int],
     ranges: FrameRangeN | FrameRangesN | None = None, blur_sigma: int | float | None = None,
-    invert: bool = False, func: FuncExceptT | None = None
+    invert: bool = False, func: FuncExceptT | None = None, show_mask: bool = False
 ) -> vs.VideoNode:
     func = func or replace_squaremask
 
     assert check_variable(clipa, func) and check_variable(clipb, func)
 
     mask = squaremask(clipb[0], *mask_params, invert, func)
+
+    if show_mask:
+        return mask
 
     if isinstance(blur_sigma, int):
         mask = box_blur(mask, blur_sigma)
