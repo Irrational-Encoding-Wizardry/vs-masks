@@ -137,7 +137,6 @@ def replace_squaremask(
     return replace_ranges(clipa, merge, ranges or [(None, None)])
 
 
-
 def freeze_replace_squaremask(
     mask: vs.VideoNode, insert: vs.VideoNode, mask_params: tuple[int, int, int, int],
     frame: int, frame_range: tuple[int, int]
