@@ -132,10 +132,12 @@ def replace_squaremask(
     elif isinstance(blur_sigma, float):
         mask = gauss_blur(mask, blur_sigma)
 
-    if show_mask:
-        return mask.std.Loop(clipa.num_frames)
+    mask = mask.std.Loop(clipa.num_frames)
 
-    merge = clipa.std.MaskedMerge(clipb, mask.std.Loop(clipa.num_frames))
+    if show_mask:
+        return mask
+
+    merge = clipa.std.MaskedMerge(clipb, mask)
 
     return replace_ranges(clipa, merge, ranges)
 
