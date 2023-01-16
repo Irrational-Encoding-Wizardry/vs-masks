@@ -83,6 +83,24 @@ def squaremask(
     clip: vs.VideoNode, width: int, height: int, offset_x: int, offset_y: int, invert: bool = False,
     func: FuncExceptT | None = None
 ) -> vs.VideoNode:
+    """
+    Create a square used for simple masking.
+
+    This is a fast and simple mask that's useful for very rough and simple masking.
+
+    :param clip:        The clip to process.
+    :param width:       The width of the square. This must be less than clip.width - offset_x.
+    :param height:      The height of the square. This must be less than clip.height - offset_y.
+    :param offset_x:    The location of the square, offset from the left side of the frame.
+    :param offset_y:    The location of the square, offset from the top of the frame.
+    :param invert:      Invert the mask. This means everything *but* the defined square will be masked.
+                        Default: False.
+    :param func:        Function returned for custom error handling.
+                        This should only be set by VS package developers.
+                        Default: :py:func:`squaremask`.
+
+    :return:            A mask in the shape of a square.
+    """
     func = func or squaremask
 
     assert check_variable(clip, func)
@@ -121,6 +139,29 @@ def replace_squaremask(
     ranges: FrameRangeN | FrameRangesN | None = None, blur_sigma: int | float | None = None,
     invert: bool = False, func: FuncExceptT | None = None, show_mask: bool = False
 ) -> vs.VideoNode:
+    """
+    Replace an area of the frame with another clip using a simple square mask.
+
+    This is a convenience wrapper merging square masking and framerange replacing functionalities
+    into one function, along with additional utilities such as blurring.
+
+    :param clipa:           Base clip to process.
+    :param clipb:           Clip to mask on top of `clipa`.
+    :param mask_params:     Parameters passed to `squaremask`. Expects a tuple of (width, height, offset_x, offset_y).
+    :param ranges:          Frameranges to replace with the masked clip. If `None`, replaces the entire clip.
+                            Default: None.
+    :param blur_sigma:      Post-blurring of the mask to help hide hard edges.
+                            If you pass an int, a :py:func:`box_blur` will be used.
+                            Passing a float will use a :py:func:`gauss_blur` instead.
+                            Default: None.
+    :param invert:          Invert the mask. This means everything *but* the defined square will be masked.
+                            Default: False.
+    :param func:            Function returned for custom error handling.
+                            This should only be set by VS package developers.
+                            Default: :py:func:`squaremask`.
+
+    :return:                Clip with a squaremask applied, and optionally set to specific frameranges.
+    """
     func = func or replace_squaremask
 
     assert check_variable(clipa, func) and check_variable(clipb, func)
