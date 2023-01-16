@@ -127,6 +127,9 @@ def replace_squaremask(
 
     mask = squaremask(clipb[0], *mask_params, invert, func)
 
+    if ranges is None:
+        ranges = [(None, None)]
+
     if isinstance(blur_sigma, int):
         mask = box_blur(mask, blur_sigma)
     elif isinstance(blur_sigma, float):
@@ -134,7 +137,7 @@ def replace_squaremask(
 
     merge = clipa.std.MaskedMerge(clipb, mask.std.Loop(clipa.num_frames))
 
-    return replace_ranges(clipa, merge, ranges or [(None, None)])
+    return replace_ranges(clipa, merge, ranges)
 
 
 def freeze_replace_squaremask(
