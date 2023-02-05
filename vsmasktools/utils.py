@@ -159,6 +159,7 @@ def replace_squaremask(
     :param func:            Function returned for custom error handling.
                             This should only be set by VS package developers.
                             Default: :py:func:`squaremask`.
+    :param show_mask:       Return the mask instead of the masked clip.
 
     :return:                Clip with a squaremask applied, and optionally set to specific frameranges.
     """
