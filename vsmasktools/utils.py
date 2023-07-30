@@ -183,7 +183,7 @@ def replace_squaremask(
 
     merge = clipa.std.MaskedMerge(clipb, mask)
 
-    return replace_ranges(clipa, merge, ranges)
+    return replace_ranges(clipa, merge, ranges if ranges else (None, None))
 
 
 def freeze_replace_squaremask(
