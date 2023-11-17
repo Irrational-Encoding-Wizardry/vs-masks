@@ -252,9 +252,9 @@ def rekt_partial(
         ratio_w, ratio_h = 1 << clip.format.subsampling_w, 1 << clip.format.subsampling_h
 
         vals = list(filter(None, [
-            ('X {left} > ' if left else None),
+            ('X {left} >= ' if left else None),
             ('X {right} < ' if right else None),
-            ('Y {top} > ' if top else None),
+            ('Y {top} >= ' if top else None),
             ('Y {bottom} < ' if bottom else None)
         ]))
 
