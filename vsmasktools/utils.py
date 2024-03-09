@@ -48,7 +48,7 @@ def _get_region_expr(
     right, bottom = right + 1, bottom + 1
 
     if isinstance(replace, int):
-        replace = f'x {replace}'
+        replace = f'{replace} x'
 
     if rel:
         return f'X {left} < X {right} > or Y {top} < Y {bottom} > or or {replace} ?'
