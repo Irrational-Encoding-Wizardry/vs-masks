@@ -46,8 +46,6 @@ class _base_cmaskcar(vs_object):
         ...
 
     def __vs_del__(self, core_id: int) -> None:
-        super().__vs_del__(core_id)
-
         self.clips.clear()
 
 
