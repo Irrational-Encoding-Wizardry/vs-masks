@@ -3,3 +3,4 @@ vstools>=3.2.0
 vskernels>=3.2.0
 vsexprtools>=1.6.0
 vsrgtools>=1.7.0
+vssource>=0.11.0

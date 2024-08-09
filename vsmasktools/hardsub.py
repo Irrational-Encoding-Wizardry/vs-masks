@@ -3,11 +3,12 @@ from __future__ import annotations
 from abc import abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Type
 
 from vsexprtools import ExprOp, ExprToken, expr_func, norm_expr
 from vskernels import Catrom
 from vsrgtools.util import mean_matrix
+from vssource import IMWRI, Indexer
 from vstools import (
     CustomOverflowError, FileNotExistsError, FilePathType, FrameRangeN, FrameRangesN, Matrix, VSFunction,
     check_variable, core, depth, fallback, get_neutral_value, get_neutral_values, get_y, iterate, normalize_ranges,
@@ -52,6 +53,7 @@ class _base_cmaskcar(vs_object):
 @dataclass
 class CustomMaskFromClipsAndRanges(GeneralMask, _base_cmaskcar):
     processing: VSFunction = field(default=core.lazy.std.Binarize, kw_only=True)
+    idx: Indexer | Type[Indexer] = field(default=IMWRI, kw_only=True)
 
     def get_mask(self, clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
         assert check_variable(clip, self.get_mask)
@@ -82,7 +84,7 @@ class CustomMaskFromFolder(CustomMaskFromClipsAndRanges):
 
         self.files = list(folder_path.glob('*'))
 
-        self.clips = [core.imwri.Read(file) for file in self.files]
+        self.clips = [self.idx.source(file, bits=-1) for file in self.files]
 
     def frame_ranges(self, clip: vs.VideoNode) -> list[list[tuple[int, int]]]:
         return [
@@ -96,7 +98,7 @@ class CustomMaskFromRanges(CustomMaskFromClipsAndRanges):
     ranges: dict[FilePathType, FrameRangeN | FrameRangesN]
 
     def __post_init__(self) -> None:
-        self.clips = [core.imwri.Read(str(file)) for file in self.ranges.keys()]
+        self.clips = [self.idx.source(str(file), bits=-1) for file in self.ranges.keys()]
 
     def frame_ranges(self, clip: vs.VideoNode) -> list[list[tuple[int, int]]]:
         return [normalize_ranges(clip, ranges) for ranges in self.ranges.values()]
