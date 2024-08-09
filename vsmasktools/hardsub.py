@@ -53,7 +53,7 @@ class _base_cmaskcar(vs_object):
 class CustomMaskFromClipsAndRanges(GeneralMask, _base_cmaskcar):
     processing: VSFunction = field(default=core.lazy.std.Binarize, kw_only=True)
 
-    def get_mask(self, clip: vs.VideoNode, *args: Any) -> vs.VideoNode:  # type: ignore[override]
+    def get_mask(self, clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
         assert check_variable(clip, self.get_mask)
 
         mask = clip.std.BlankClip(
@@ -67,7 +67,7 @@ class CustomMaskFromClipsAndRanges(GeneralMask, _base_cmaskcar):
             maskclip = maskclip.std.AssumeFPS(clip).resize.Point(format=mask.format.id, matrix=matrix)  # type: ignore
             maskclip = self.processing(maskclip).std.Loop(mask.num_frames)
 
-            mask = replace_ranges(mask, maskclip, mask_ranges)
+            mask = replace_ranges(mask, maskclip, mask_ranges, **kwargs)
 
         return mask
 

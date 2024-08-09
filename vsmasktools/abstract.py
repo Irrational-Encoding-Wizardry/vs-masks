@@ -24,7 +24,7 @@ class GeneralMask(ABC):
     def apply_mask(
         self, _clipa: vs.VideoNode, _clipb: vs.VideoNode, _ref: vs.VideoNode | None = None, /, **kwargs: Any
     ) -> vs.VideoNode:
-        return _clipa.std.MaskedMerge(_clipb, self.get_mask(_ref or _clipa))
+        return _clipa.std.MaskedMerge(_clipb, self.get_mask(_ref or _clipa, **kwargs))
 
 
 class BoundingBox(GeneralMask):
