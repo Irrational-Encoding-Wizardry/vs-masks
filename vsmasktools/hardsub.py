@@ -80,14 +80,14 @@ class CustomMaskFromFolder(CustomMaskFromClipsAndRanges):
         if not (folder_path := Path(str(self.folder_path))).is_dir():
             raise FileNotExistsError('"folder_path" must be an existing path directory!', self.get_mask)
 
-        self.files = [file.stem for file in folder_path.glob('*')]
+        self.files = list(folder_path.glob('*'))
 
         self.clips = [core.imwri.Read(file) for file in self.files]
 
     def frame_ranges(self, clip: vs.VideoNode) -> list[list[tuple[int, int]]]:
         return [
             [(other[-1] if other else end, end)]
-            for (*other, end) in (map(int, name.split('_')) for name in self.files)
+            for (*other, end) in (map(int, name.stem.split('_')) for name in self.files)
         ]
 
 
