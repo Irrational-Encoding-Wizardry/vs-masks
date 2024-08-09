@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Type
 
 from vsexprtools import ExprOp, ExprToken, expr_func, norm_expr
-from vskernels import Catrom
+from vskernels import Catrom, Point
 from vsrgtools.util import mean_matrix
 from vssource import IMWRI, Indexer
 from vstools import (
@@ -67,10 +67,7 @@ class CustomMaskFromClipsAndRanges(GeneralMask, _base_cmaskcar):
         matrix = Matrix.from_video(clip)
 
         for maskclip, mask_ranges in zip(self.clips, self.frame_ranges(clip)):
-            maskclip = maskclip.std.AssumeFPS(clip).resize.Point(
-                format=mask.format.id, matrix=matrix,  # type: ignore
-                range_in=ColorRange.FULL.value_zimg, range=ColorRange.FULL.value_zimg
-            )
+            maskclip = Point.resample(maskclip.std.AssumeFPS(clip), mask.format, matrix, range_in=ColorRange.FULL, range=ColorRange.FULL)
             maskclip = self.processing(maskclip).std.Loop(mask.num_frames)
 
             mask = replace_ranges(mask, maskclip, mask_ranges, **kwargs)
