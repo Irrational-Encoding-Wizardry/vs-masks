@@ -10,9 +10,10 @@ from vskernels import Catrom
 from vsrgtools.util import mean_matrix
 from vssource import IMWRI, Indexer
 from vstools import (
-    CustomOverflowError, FileNotExistsError, FilePathType, FrameRangeN, FrameRangesN, Matrix, VSFunction,
-    check_variable, core, depth, fallback, get_neutral_value, get_neutral_values, get_y, iterate, normalize_ranges,
-    replace_ranges, scale_8bit, scale_value, vs, vs_object
+    ColorRange, CustomOverflowError, FileNotExistsError, FilePathType, FrameRangeN, FrameRangesN,
+    Matrix, VSFunction, check_variable, core, depth, fallback, get_neutral_value,
+    get_neutral_values, get_y, iterate, normalize_ranges, replace_ranges, scale_8bit, scale_value,
+    vs, vs_object
 )
 
 from .abstract import DeferredMask, GeneralMask
@@ -66,7 +67,10 @@ class CustomMaskFromClipsAndRanges(GeneralMask, _base_cmaskcar):
         matrix = Matrix.from_video(clip)
 
         for maskclip, mask_ranges in zip(self.clips, self.frame_ranges(clip)):
-            maskclip = maskclip.std.AssumeFPS(clip).resize.Point(format=mask.format.id, matrix=matrix)  # type: ignore
+            maskclip = maskclip.std.AssumeFPS(clip).resize.Point(
+                format=mask.format.id, matrix=matrix,  # type: ignore
+                range_in=ColorRange.FULL.value_zimg, range=ColorRange.FULL.value_zimg
+            )
             maskclip = self.processing(maskclip).std.Loop(mask.num_frames)
 
             mask = replace_ranges(mask, maskclip, mask_ranges, **kwargs)
