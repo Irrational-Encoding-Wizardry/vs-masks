@@ -67,7 +67,10 @@ class CustomMaskFromClipsAndRanges(GeneralMask, _base_cmaskcar):
         matrix = Matrix.from_video(clip)
 
         for maskclip, mask_ranges in zip(self.clips, self.frame_ranges(clip)):
-            maskclip = Point.resample(maskclip.std.AssumeFPS(clip), mask.format, matrix, range_in=ColorRange.FULL, range=ColorRange.FULL)
+            maskclip = Point.resample(
+                maskclip.std.AssumeFPS(clip), mask.format, matrix,
+                range_in=ColorRange.FULL, range=ColorRange.FULL
+            )
             maskclip = self.processing(maskclip).std.Loop(mask.num_frames)
 
             mask = replace_ranges(mask, maskclip, mask_ranges, **kwargs)
