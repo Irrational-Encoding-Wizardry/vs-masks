@@ -6,10 +6,11 @@ from vsexprtools import ExprOp
 from vskernels import Bicubic, Catrom, Kernel, KernelT
 from vsrgtools import RemoveGrainMode, bilateral, gauss_blur, removegrain
 from vstools import (
-    CustomValueError, FuncExceptT, KwargsT, check_variable, depth, expect_bits, get_w, get_y, insert_clip, iterate, vs
+    CustomValueError, FuncExceptT, KwargsT, check_variable, depth, expect_bits, get_w, get_y,
+    insert_clip, iterate, vs
 )
 
-from .edge import ExLaplacian4
+from .edge import EdgeDetect, EdgeDetectT, ExLaplacian4
 from .morpho import Morpho
 from .types import XxpandMode
 
@@ -51,7 +52,8 @@ def diff_rescale(
 def diff_creditless(
     credit_clip: vs.VideoNode, nc_clip: vs.VideoNode, thr: float = 0.01,
     start_frame: int = 0, expand: int = 2, *, prefilter: bool | int = False,
-    ep_clip: vs.VideoNode | None = None, func: FuncExceptT | None = None, **kwargs: Any
+    edgemask: EdgeDetectT = ExLaplacian4, ep_clip: vs.VideoNode | None = None,
+    func: FuncExceptT | None = None, **kwargs: Any
 ) -> vs.VideoNode:
     func = func or diff_creditless
 
@@ -72,7 +74,7 @@ def diff_creditless(
         format=diff_fmt, split_planes=True
     )
 
-    mask = ExLaplacian4.edgemask(diff, lthr=thr, hthr=thr)
+    mask = EdgeDetect.ensure_obj(edgemask, func).edgemask(diff, lthr=thr, hthr=thr)
     mask = Morpho.expand(mask, 2 + expand, mode=XxpandMode.ELLIPSE)
 
     if not ep_clip or ep_clip.num_frames == mask.num_frames:
