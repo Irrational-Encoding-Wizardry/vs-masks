@@ -131,7 +131,7 @@ class HardsubMask(DeferredMask):
 
         assert masks[-1].format is not None
 
-        thr = scale_value(self.bin_thr, 32, masks[-1])
+        thr = scale_value(self.bin_thr, 32, masks[-1], ColorRange.FULL)
 
         for p in partials:
             masks.append(
@@ -180,7 +180,7 @@ class HardsubSignFades(HardsubMask):
             for x in (clip, ref)
         )
 
-        highpass = scale_value(self.highpass, 32, clip)
+        highpass = scale_value(self.highpass, 32, clip, ColorRange.FULL)
 
         mask = norm_expr(
             [clipedge, refedge], f'x y - {highpass} < 0 {ExprToken.RangeMax} ?'

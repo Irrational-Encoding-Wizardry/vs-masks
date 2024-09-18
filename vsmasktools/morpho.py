@@ -9,7 +9,7 @@ from vsexprtools import ExprList, ExprOp, ExprToken, complexpr_available, norm_e
 from vsrgtools.util import wmean_matrix
 from vstools import (
     ConvMode, CustomIndexError, FuncExceptT, PlanesT, StrList, check_variable, copy_signature, core, fallback,
-    inject_self, interleave_arr, iterate, scale_value, to_arr, vs
+    ColorRange, inject_self, interleave_arr, iterate, scale_value, to_arr, vs
 )
 
 from .types import Coordinates, MorphoFunc, XxpandMode
@@ -112,7 +112,7 @@ class Morpho:
         matrix = ExprList(interleave_arr(matrix, op * matrix.mlength, 2))
 
         if thr is not None:
-            matrix.append('x', scale_value(thr, 32, src), ExprOp.SUB, ExprOp.MAX)
+            matrix.append('x', scale_value(thr, 32, src, ColorRange.FULL), ExprOp.SUB, ExprOp.MAX)
 
         if multiply is not None:
             matrix.append(multiply, ExprOp.MUL)
@@ -150,7 +150,7 @@ class Morpho:
 
         if not self._fast:
             if thr is not None:
-                kwargs.update(threshold=scale_value(thr, 32, src))
+                kwargs.update(threshold=scale_value(thr, 32, src, ColorRange.FULL))
 
             if multiply is not None:
                 orig_mm_func = mm_func
@@ -211,7 +211,7 @@ class Morpho:
         expr.append('x', ExprOp.MAX if inflate else ExprOp.MIN)
 
         if thr is not None:
-            thr = scale_value(thr, 32, src)
+            thr = scale_value(thr, 32, src, ColorRange.FULL)
             limit = ['x', thr, ExprOp.ADD] if inflate else ['x', thr, ExprOp.SUB, ExprToken.RangeMin, ExprOp.MAX]
 
             expr.append(limit, ExprOp.MIN if inflate else ExprOp.MAX)
@@ -375,7 +375,7 @@ class Morpho:
     ) -> vs.VideoNode:
         midthr, lowval, highval = (
             thr and list(
-                scale_value(t, 32, src, chroma=i != 0)
+                scale_value(t, 32, src, ColorRange.FULL, chroma=i != 0)
                 for i, t in enumerate(to_arr(thr))
             ) for thr in (midthr, lowval, highval)
         )

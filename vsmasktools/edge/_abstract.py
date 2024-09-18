@@ -183,7 +183,7 @@ class EdgeDetect(ABC):
         peak = get_peak_value(clip)
         hthr = 1.0 if hthr is None else hthr
 
-        lthr, hthr = scale_value(lthr, 32, clip), scale_value(hthr, 32, clip)
+        lthr, hthr = scale_value(lthr, 32, clip, ColorRange.FULL), scale_value(hthr, 32, clip, ColorRange.FULL)
 
         discard_planes = False
         if isinstance(planes, tuple):

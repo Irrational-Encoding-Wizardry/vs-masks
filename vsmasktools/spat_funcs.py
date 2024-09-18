@@ -149,7 +149,7 @@ def flat_mask(src: vs.VideoNode, radius: int = 5, thr: float = 0.011, gauss: boo
 
     blur = gauss_blur(luma, radius * 0.361083333) if gauss else box_blur(luma, radius)
 
-    mask = depth(luma, 8).abrz.AdaptiveBinarize(depth(blur, 8), scale_value(thr, 32, 8))
+    mask = depth(luma, 8).abrz.AdaptiveBinarize(depth(blur, 8), scale_value(thr, 32, 8, ColorRange.FULL))
 
     return depth(mask, luma, dither_type=DitherType.NONE, range_in=ColorRange.FULL, range_out=ColorRange.FULL)
 
@@ -161,7 +161,7 @@ def texture_mask(
     points: list[tuple[bool, float]] = [(False, 1.75), (True, 2.5), (True, 5), (False, 10)]
 ) -> vs.VideoNode:
     levels = [x for x, _ in points]
-    _points = [scale_value(x, 8, clip) for _, x in points]
+    _points = [scale_8bit(clip, x) for _, x in points]
 
     qm, peak = len(points), get_peak_value(clip)
 
