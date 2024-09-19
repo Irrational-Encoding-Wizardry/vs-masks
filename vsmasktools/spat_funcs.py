@@ -21,7 +21,7 @@ __all__ = [
 
 
 @overload
-def adg_mask(  # type: ignore
+def adg_mask(
     clip: vs.VideoNode, luma_scaling: float = 8.0, relative: bool = False, func: FuncExceptT | None = None
 ) -> vs.VideoNode:
     ...
@@ -72,7 +72,7 @@ def adg_mask(
             )
     else:
         def _adgfunc(luma: vs.VideoNode, ls: float) -> vs.VideoNode:
-            return luma.adg.Mask(ls)  # type: ignore
+            return luma.adg.Mask(ls)
 
     scaled_clips = [_adgfunc(y_inv if ls < 0 else y, abs(ls)) for ls in to_arr(luma_scaling)]
 
@@ -95,14 +95,14 @@ def retinex(
 
     y = get_y(clip)
 
-    if not complexpr_available or not hasattr(core, 'psm'):
+    if not complexpr_available or not hasattr(core, 'vszip'):
         if fast:
             raise CustomRuntimeError(
                 "You don't have {missing} plugin, you can't use this function!", func, 'fast=True',
-                missing=iter(x for x in ('akarin', 'psm') if not hasattr(core, x))
+                missing=iter(x for x in ('akarin', 'vszip') if not hasattr(core, x))
             )
 
-        return y.retinex.MSRCP(sigma, lower_thr, upper_thr)  # type: ignore
+        return y.retinex.MSRCP(sigma, lower_thr, upper_thr)
     elif fast is None:
         fast = True
 
@@ -130,7 +130,7 @@ def retinex(
 
     msr = norm_expr([luma_float, (gauss_blur(luma_float, i) for i in sigma)], expr_msr)
 
-    msr_stats = msr.psm.PlaneMinMax(lower_thr, upper_thr)
+    msr_stats = msr.vszip.PlaneMinMax(lower_thr, upper_thr)
 
     expr_balance = "x x.psmMin - x.psmMax x.psmMin - /"
 
