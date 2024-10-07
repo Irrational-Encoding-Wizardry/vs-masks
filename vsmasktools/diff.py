@@ -84,9 +84,12 @@ def credit_mask(
     blur: float | None = 1.65, prefilter: bool | int = 5,
     expand: int = 8
 ) -> vs.VideoNode:
+    if blur is not None:
+        clip, ref = gauss_blur(clip, blur), gauss_blur(ref, blur)
+
     credit_mask = based_diff_mask(
         clip, ref,
-        thr=thr, blur=blur,
+        thr=thr,
         prefilter=prefilter, postfilter=0,
         ampl=ExLaplacian4, expand=4
     )
@@ -110,7 +113,7 @@ def based_diff_mask(
     clip: vs.VideoNode, ref: vs.VideoNode,
     /,
     *,
-    thr: float = 0.216, blur: float | KwargsT | None = None,
+    thr: float = 0.216,
     prefilter: int | KwargsT | bool | VSFunction = False,
     postfilter: int | tuple[Count, RemoveGrainMode] | list[tuple[Count, RemoveGrainMode]] | VSFunction = 2,
     ampl: str | type[EdgeDetect] | EdgeDetect = ...,
@@ -123,7 +126,6 @@ def based_diff_mask(
     :param clip:        Source clip
     :param ref:         Reference clip
     :param thr:         Threshold of the amplification expr, defaults to 0.216
-    :param blur:        Sigma of the gaussian blur applied before prefilter, defaults to None
     :param prefilter:   Filter applied before extracting the difference between clip and ref:
                         - int -> equivalent of number of taps used in the bilateral call applied to the clips
                         - True -> 5 taps
@@ -139,7 +141,7 @@ def based_diff_mask(
 def based_diff_mask(
     clip: vs.VideoNode, height: int, kernel: KernelT = ...,
     /,
-    thr: float = 0.216, blur: float | KwargsT | None = None,
+    thr: float = 0.216,
     prefilter: int | KwargsT | bool | VSFunction = False,
     postfilter: int | tuple[Count, RemoveGrainMode] | list[tuple[Count, RemoveGrainMode]] | VSFunction = 2,
     ampl: str | type[EdgeDetect] | EdgeDetect = ...,
@@ -153,7 +155,6 @@ def based_diff_mask(
     :param height:      Height to be descaled to
     :param kernel:      Kernel used for descaling and rescaling
     :param thr:         Threshold of the amplification expr, defaults to 0.216
-    :param blur:        Sigma of the gaussian blur applied before prefilter, defaults to None
     :param prefilter:   Filter applied before extracting the difference between clip and ref:
                         - int -> equivalent of number of taps used in the bilateral call applied to the clips
                         - True -> 5 taps
@@ -168,7 +169,7 @@ def based_diff_mask(
 def based_diff_mask(
     clip: vs.VideoNode, ref_or_height: vs.VideoNode | int, kernel: KernelT = NoScale,
     /,
-    thr: float = 0.216, blur: float | KwargsT | None = None,
+    thr: float = 0.216,
     prefilter: int | KwargsT | bool | VSFunction = False,
     postfilter: int | tuple[Count, RemoveGrainMode] | list[tuple[Count, RemoveGrainMode]] | VSFunction = 2,
     ampl: str | type[EdgeDetect] | EdgeDetect = 'x 2 4 pow * {thr} < 0 1 ?',
@@ -193,12 +194,6 @@ def based_diff_mask(
 
     if clip.format.num_planes != ref.format.num_planes:
         clip, ref = get_y(clip), get_y(ref)
-
-    if blur:
-        if isinstance(blur, dict):
-            clip, ref = gauss_blur(clip, **blur), gauss_blur(ref, **blur)
-        else:
-            clip, ref = gauss_blur(clip, blur), gauss_blur(ref, blur)
 
     if prefilter:
         if callable(prefilter):
