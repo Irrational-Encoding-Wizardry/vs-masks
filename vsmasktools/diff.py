@@ -104,6 +104,7 @@ def credit_mask(
 
 Count: TypeAlias = int
 
+
 @overload
 def based_diff_mask(
     clip: vs.VideoNode, ref: vs.VideoNode,
@@ -239,5 +240,5 @@ def based_diff_mask(
 
     if expand:
         mask = Morpho.expand(mask, expand, mode=XxpandMode.ELLIPSE)
-    
+
     return mask
