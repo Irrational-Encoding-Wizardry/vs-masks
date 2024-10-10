@@ -6,8 +6,8 @@ from vsexprtools import ExprOp, norm_expr
 from vskernels import Bilinear, Catrom, Kernel, KernelT, NoScale
 from vsrgtools import RemoveGrainMode, bilateral, gauss_blur, removegrain
 from vstools import (
-    ColorRange, CustomValueError, FuncExceptT, KwargsT, VSFunction, check_variable, depth,
-    get_w, get_y, insert_clip, iterate, vs
+    ColorRange, CustomValueError, FuncExceptT, KwargsT, VSFunction, check_variable, depth, get_w,
+    get_y, insert_clip, iterate, vs
 )
 
 from .edge import EdgeDetect, EdgeDetectT, ExLaplacian4
@@ -172,7 +172,7 @@ def based_diff_mask(
     thr: float = 0.216,
     prefilter: int | KwargsT | bool | VSFunction = False,
     postfilter: int | tuple[Count, RemoveGrainMode] | list[tuple[Count, RemoveGrainMode]] | VSFunction = 2,
-    ampl: str | type[EdgeDetect] | EdgeDetect = 'x 2 4 pow * {thr} < 0 1 ?',
+    ampl: str | type[EdgeDetect] | EdgeDetect = 'x yrange_max / 2 4 pow * {thr} < 0 1 ? yrange_max *',
     expand: int = 4,
     func: FuncExceptT | None = None
 ) -> vs.VideoNode:
