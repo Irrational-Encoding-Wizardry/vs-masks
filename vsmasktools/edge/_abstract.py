@@ -396,7 +396,7 @@ def get_all_edge_detects(
     all_subclasses = {
         s for s in _all_subclasses()
         if s.__name__ not in {
-            'MatrixEdgeDetect', 'RidgeDetect', 'SingleMatrix', 'EuclideanDistance', 'Max',
+            'MatrixEdgeDetect', 'RidgeDetect', 'SingleMatrix', 'EuclideanDistance', 'MagnitudeMatrix', 'Max',
             'Matrix1D', 'SavitzkyGolay', 'SavitzkyGolayNormalise',
             'Matrix2x2', 'Matrix3x3', 'Matrix5x5'
         }
@@ -428,7 +428,7 @@ def get_all_ridge_detect(
     all_subclasses = {
         s for s in _all_subclasses()
         if s.__name__ not in {
-            'MatrixEdgeDetect', 'RidgeDetect', 'SingleMatrix', 'EuclideanDistance', 'Max',
+            'MatrixEdgeDetect', 'RidgeDetect', 'SingleMatrix', 'EuclideanDistance', 'MagnitudeMatrix', 'Max',
             'Matrix1D', 'SavitzkyGolay', 'SavitzkyGolayNormalise',
             'Matrix2x2', 'Matrix3x3', 'Matrix5x5'
         }
