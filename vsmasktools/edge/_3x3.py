@@ -320,12 +320,16 @@ class KirschTCanny(Matrix3x3, EdgeDetect):
 
 
 # Misc
-@dataclass
 class MinMax(EdgeDetect):
     """Min/max mask with separate luma/chroma radii."""
 
-    rady: int = 2
-    radc: int = 0
+    rady: int
+    radc: int
+
+    def __init__(self, rady: int = 2, radc: int = 0, **kwargs: Any) -> None:
+        self.rady = rady
+        self.radc = radc
+        super().__init__(**kwargs)
 
     def _compute_edge_mask(self, clip: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
         assert clip.format
