@@ -305,9 +305,7 @@ class HardsubASS(HardsubMask):
 
     def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
         ref = ref[0] * self.shift + ref if self.shift else ref
-        mask: vs.VideoNode = ref.sub.TextFile(  # type: ignore[attr-defined]
-            self.filename, fontdir=self.fontdir, blend=False
-        )[1]
+        mask = ref.sub.TextFile(self.filename, fontdir=self.fontdir, blend=False).std.PropToClip('_Alpha')
         mask = mask[self.shift:] if self.shift else mask
         mask = mask.std.Binarize(1)
         mask = iterate(mask, core.std.Maximum, 3)
