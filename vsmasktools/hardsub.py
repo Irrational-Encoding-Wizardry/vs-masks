@@ -10,16 +10,17 @@ from vskernels import Catrom, Point
 from vsrgtools.util import mean_matrix
 from vssource import IMWRI, Indexer
 from vstools import (
-    ColorRange, CustomOverflowError, FileNotExistsError, FilePathType, FrameRangeN, FrameRangesN, Matrix, VSFunction,
-    check_variable, core, depth, fallback, get_peak_value, get_lowest_value, get_neutral_value, get_neutral_values, get_y, iterate, normalize_ranges,
-    replace_ranges, scale_value, vs, vs_object
+    ColorRange, CustomOverflowError, FileNotExistsError, FilePathType, FrameRangeN, FrameRangesN,
+    Matrix, VSFunction, check_variable, core, depth, fallback, get_lowest_value, get_neutral_value,
+    get_neutral_values, get_peak_value, get_y, iterate, normalize_ranges, replace_ranges,
+    scale_value, vs, vs_object
 )
 
 from .abstract import DeferredMask, GeneralMask
 from .edge import Sobel
 from .morpho import Morpho
 from .types import GenericMaskT
-from .utils import normalize_mask
+from .utils import max_planes, normalize_mask
 
 __all__ = [
     'CustomMaskFromFolder',
@@ -340,6 +341,6 @@ def get_all_sign_masks(hrdsb: vs.VideoNode, ref: vs.VideoNode, signs: list[Hards
     )
 
     for sign in signs:
-        mask = replace_ranges(mask, ExprOp.ADD.combine(mask, sign.get_mask(hrdsb, ref)), sign.ranges)
+        mask = replace_ranges(mask, ExprOp.ADD.combine(mask, max_planes(sign.get_mask(hrdsb, ref))), sign.ranges)
 
     return mask.std.Limiter()
