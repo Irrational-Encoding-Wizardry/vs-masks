@@ -17,9 +17,9 @@ from vstools import (
 )
 
 from .abstract import DeferredMask, GeneralMask
-from .edge import Sobel
+from .edge import SobelStd
 from .morpho import Morpho
-from .types import GenericMaskT
+from .types import GenericMaskT, XxpandMode
 from .utils import max_planes, normalize_mask
 
 __all__ = [
@@ -164,13 +164,17 @@ class HardsubSignFades(HardsubMask):
     highpass: float
     expand: int
     edgemask: GenericMaskT
+    expand_mode: XxpandMode
 
     def __init__(
-        self, *args: Any, highpass: float = 0.0763, expand: int = 8, edgemask: GenericMaskT = Sobel, **kwargs: Any
+        self, *args: Any, highpass: float = 0.0763, expand: int = 8, edgemask: GenericMaskT = SobelStd,
+        expand_mode: XxpandMode = XxpandMode.RECTANGLE,
+        **kwargs: Any
     ) -> None:
         self.highpass = highpass
         self.expand = expand
         self.edgemask = edgemask
+        self.expand_mode = expand_mode
 
         super().__init__(*args, **kwargs)
 
@@ -186,41 +190,47 @@ class HardsubSignFades(HardsubMask):
             [clipedge, refedge], f'x y - {highpass} < 0 {ExprToken.RangeMax} ?'
         ).std.Median()
 
-        return Morpho.inflate(Morpho.maximum(mask, iterations=self.expand), iterations=4)
+        return Morpho.inflate(Morpho.expand(mask, self.expand, mode=self.expand_mode), iterations=4)
 
 
 class HardsubSign(HardsubMask):
     """
     Hardsub scenefiltering helper using `Zastin <https://github.com/kgrabs>`_'s hardsub mask.
 
-    :param thr:     Binarization threshold, [0, 1] (Default: 0.06).
-    :param expand:  std.Maximum iterations (Default: 8).
-    :param inflate: std.Inflate iterations (Default: 7).
+    :param thr:             Binarization threshold, [0, 1] (Default: 0.06).
+    :param minimum:         std.Minimum iterations (Default: 1).
+    :param expand:          std.Maximum iterations (Default: 8).
+    :param inflate:         std.Inflate iterations (Default: 7).
+    :param expand_mode:     Specifies the XxpandMode used for mask growth (Default: XxpandMode.RECTANGLE).
     """
 
     thr: float
     minimum: int
     expand: int
     inflate: int
+    expand_mode: XxpandMode
 
     def __init__(
-        self, *args: Any, thr: float = 0.06, minimum: int = 1, expand: int = 8, inflate: int = 7, **kwargs: Any
+        self, *args: Any, thr: float = 0.06, minimum: int = 1, expand: int = 8, inflate: int = 7,
+        expand_mode: XxpandMode = XxpandMode.RECTANGLE,
+        **kwargs: Any
     ) -> None:
         self.thr = thr
         self.minimum = minimum
         self.expand = expand
         self.inflate = inflate
+        self.expand_mode = expand_mode
         super().__init__(*args, **kwargs)
 
     def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
         hsmf = norm_expr([clip, ref], 'x y - abs')
-        hsmf = hsmf.resize.Point(format=clip.format.replace(subsampling_w=0, subsampling_h=0).id)  # type: ignore
+        hsmf = Point.resample(hsmf, clip.format.replace(subsampling_w=0, subsampling_h=0))  # type: ignore
 
         hsmf = ExprOp.MAX(hsmf, split_planes=True)
 
         hsmf = Morpho.binarize(hsmf, self.thr)
         hsmf = Morpho.minimum(hsmf, iterations=self.minimum)
-        hsmf = Morpho.maximum(hsmf, iterations=self.expand)
+        hsmf = Morpho.expand(hsmf, self.expand, mode=self.expand_mode)
         hsmf = Morpho.inflate(hsmf, iterations=self.inflate)
 
         return hsmf.std.Limiter()
