@@ -37,7 +37,7 @@ class BoundingBox(GeneralMask):
 
     def get_mask(self, ref: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:  # type: ignore[override]
         from .utils import squaremask
-        return squaremask(ref, self.size.x, self.size.y, self.pos.x, self.pos.y, self.invert, self.get_mask)
+        return squaremask(ref, self.size.x, self.size.y, self.pos.x, self.pos.y, self.invert, False, self.get_mask)
 
 
 class DeferredMask(GeneralMask):

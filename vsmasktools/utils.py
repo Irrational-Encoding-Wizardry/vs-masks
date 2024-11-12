@@ -6,8 +6,9 @@ from vsexprtools import ExprOp, complexpr_available, norm_expr
 from vskernels import Bilinear, Kernel, KernelT
 from vsrgtools import box_blur, gauss_blur
 from vstools import (
-    CustomValueError, FrameRangeN, FrameRangesN, FuncExceptT, P, check_ref_clip, check_variable, check_variable_format,
-    core, depth, flatten, get_peak_value, insert_clip, normalize_ranges, replace_ranges, split, vs
+    CustomValueError, FrameRangeN, FrameRangesN, FuncExceptT, P, check_ref_clip, check_variable,
+    check_variable_format, core, depth, flatten, get_lowest_values, get_peak_values, insert_clip,
+    normalize_ranges, replace_ranges, split, vs
 )
 
 from .abstract import GeneralMask
@@ -83,6 +84,7 @@ def region_abs_mask(clip: vs.VideoNode, width: int, height: int, left: int = 0, 
 
 def squaremask(
     clip: vs.VideoNode, width: int, height: int, offset_x: int, offset_y: int, invert: bool = False,
+    force_gray: bool = True,
     func: FuncExceptT | None = None
 ) -> vs.VideoNode:
     """
@@ -97,6 +99,7 @@ def squaremask(
     :param offset_y:    The location of the square, offset from the top of the frame.
     :param invert:      Invert the mask. This means everything *but* the defined square will be masked.
                         Default: False.
+    :param force_gray:  Whether to force using GRAY format or clip format.
     :param func:        Function returned for custom error handling.
                         This should only be set by VS package developers.
                         Default: :py:func:`squaremask`.
@@ -107,13 +110,19 @@ def squaremask(
 
     assert check_variable(clip, func)
 
-    mask_format = clip.format.replace(color_family=vs.GRAY, subsampling_w=0, subsampling_h=0)
+    mask_format = clip.format.replace(
+        color_family=vs.GRAY, subsampling_w=0, subsampling_h=0
+    ) if force_gray else clip.format
 
     if offset_x + width > clip.width or offset_y + height > clip.height:
         raise CustomValueError('mask exceeds clip size!')
 
     if complexpr_available:
-        base_clip = clip.std.BlankClip(None, None, mask_format.id, 1, color=0, keep=True)
+        base_clip = clip.std.BlankClip(
+            None, None, mask_format.id, 1,
+            color=get_lowest_values(mask_format),
+            keep=True
+        )
 
         mask = norm_expr(
             base_clip, _get_region_expr(
@@ -122,7 +131,7 @@ def squaremask(
             ), force_akarin=func
         )
     else:
-        base_clip = clip.std.BlankClip(width, height, mask_format.id, 1, color=get_peak_value(clip), keep=True)
+        base_clip = clip.std.BlankClip(width, height, mask_format.id, 1, color=get_peak_values(mask_format), keep=True)
 
         mask = base_clip.std.AddBorders(
             offset_x, clip.width - width - offset_x, offset_y, clip.height - height - offset_y
@@ -169,7 +178,7 @@ def replace_squaremask(
 
     assert check_variable(clipa, func) and check_variable(clipb, func)
 
-    mask = squaremask(clipb[0], *mask_params, invert, func)
+    mask = squaremask(clipb[0], *mask_params, invert, func=func)
 
     if isinstance(blur_sigma, int):
         mask = box_blur(mask, blur_sigma)
