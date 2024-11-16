@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Type
 
 from vsexprtools import ExprOp, ExprToken, expr_func, norm_expr
-from vskernels import Catrom, Point
+from vskernels import Bilinear, Catrom, Point
 from vsrgtools.util import mean_matrix
 from vssource import IMWRI, Indexer
 from vstools import (
@@ -224,7 +224,7 @@ class HardsubSign(HardsubMask):
 
     def _mask(self, clip: vs.VideoNode, ref: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
         hsmf = norm_expr([clip, ref], 'x y - abs')
-        hsmf = Point.resample(hsmf, clip.format.replace(subsampling_w=0, subsampling_h=0))  # type: ignore
+        hsmf = Bilinear.resample(hsmf, clip.format.replace(subsampling_w=0, subsampling_h=0))  # type: ignore
 
         hsmf = ExprOp.MAX(hsmf, split_planes=True)
 
