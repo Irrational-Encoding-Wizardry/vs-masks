@@ -270,7 +270,7 @@ class MatrixEdgeDetect(EdgeDetect):
         y = _y(clip)
         xx = _x(x)
         yy = _y(y)
-        xy = _x(x)
+        xy = _y(x)
         return self._merge_ridge([xx, yy, xy])
 
     @abstractmethod
