@@ -7,9 +7,9 @@ from typing import Any, ClassVar, NoReturn, Sequence, TypeAlias
 from stgpytools import inject_kwargs_params
 from vsexprtools import ExprOp, ExprToken, norm_expr
 from vstools import (
-    ColorRange, CustomRuntimeError, CustomValueError, FuncExceptT, KwargsT, PlanesT, T, check_variable, core,
-    get_lowest_values, get_peak_value, get_peak_values, get_subclasses, inject_self, join, normalize_planes, plane,
-    scale_mask, vs
+    ColorRange, CustomRuntimeError, CustomValueError, DitherType, FuncExceptT, KwargsT, PlanesT, T,
+    check_variable, core, depth, get_lowest_values, get_peak_value, get_peak_values, get_subclasses,
+    inject_self, join, normalize_planes, plane, scale_mask, vs
 )
 
 from ..exceptions import UnknownEdgeDetectError, UnknownRidgeDetectError
@@ -244,7 +244,7 @@ class EdgeDetect(ABC):
     def _preprocess(self, clip: vs.VideoNode) -> vs.VideoNode:
         return clip
 
-    def _postprocess(self, clip: vs.VideoNode, input_bits: int) -> vs.VideoNode:
+    def _postprocess(self, clip: vs.VideoNode, input_bits: int | None = None) -> vs.VideoNode:
         return clip
 
 
@@ -290,7 +290,7 @@ class MatrixEdgeDetect(EdgeDetect):
     def _get_mode_types(self) -> Sequence[str]:
         return self.mode_types if self.mode_types else ['s'] * len(self._get_matrices())
 
-    def _postprocess(self, clip: vs.VideoNode, input_bits: int) -> vs.VideoNode:
+    def _postprocess(self, clip: vs.VideoNode, input_bits: int | None = None) -> vs.VideoNode:
         if len(self.matrices[0]) > 9 or (self.mode_types and self.mode_types[0] != 's'):
             clip = clip.std.Crop(
                 right=clip.format.subsampling_w * 2 if clip.format and clip.format.subsampling_w != 0 else 2
@@ -326,10 +326,11 @@ class RidgeDetect(MatrixEdgeDetect):
         self, clip: vs.VideoNode, lthr: float = 0.0, hthr: float | None = None, multi: float = 1.0,
         clamp: bool | tuple[float, float] | list[tuple[float, float]] = False,
         planes: PlanesT | tuple[PlanesT, bool] = None, **kwargs: Any
-    ) -> vs.VideoNode | NoReturn:
+    ) -> vs.VideoNode:
         """
         Makes ridge mask based on convolution kernel.
         The resulting mask can be thresholded with lthr, hthr and multiplied with multi.
+        Using a 32-bit float clip is recommended.
 
         :param clip:            Source clip
         :param lthr:            Low threshold. Anything below lthr will be set to 0
@@ -343,6 +344,20 @@ class RidgeDetect(MatrixEdgeDetect):
 
     def _merge_ridge(self, clips: Sequence[vs.VideoNode]) -> vs.VideoNode:
         return core.std.Expr(clips, 'x 2 pow z 2 pow 4 * + x y * 2 * - y 2 pow + sqrt x y + + 0.5 *')
+
+    def _preprocess(self, clip: vs.VideoNode) -> vs.VideoNode:
+        if len(self.matrices[0]) > 9 or (self.mode_types and self.mode_types[0] != 's'):
+            clip = clip.resize.Point(clip.width + 4, src_width=clip.width + 4)
+
+        return super()._preprocess(depth(clip, 32))
+
+    def _postprocess(self, clip: vs.VideoNode, input_bits: int | None = None) -> vs.VideoNode:
+        clip = depth(clip, input_bits, dither_type=DitherType.NONE)
+
+        if len(self.matrices[0]) > 9 or (self.mode_types and self.mode_types[0] != 's'):
+            return clip.std.Crop(right=4)
+
+        return super()._postprocess(clip, input_bits)
 
 
 class SingleMatrix(MatrixEdgeDetect, ABC):

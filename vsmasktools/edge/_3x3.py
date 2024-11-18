@@ -239,7 +239,7 @@ class FreyChen(MatrixEdgeDetect):
     def _preprocess(self, clip: vs.VideoNode) -> vs.VideoNode:
         return depth(clip, 32)
 
-    def _postprocess(self, clip: vs.VideoNode, input_bits: int) -> vs.VideoNode:
+    def _postprocess(self, clip: vs.VideoNode, input_bits: int | None = None) -> vs.VideoNode:
         return depth(clip, input_bits, range_in=ColorRange.FULL, range_out=ColorRange.FULL)
 
     def _merge_edge(self, clips: Sequence[vs.VideoNode]) -> vs.VideoNode:
