@@ -342,7 +342,7 @@ class RidgeDetect(MatrixEdgeDetect):
         return self._mask(clip, lthr, hthr, multi, clamp, _Feature.RIDGE, planes, **kwargs)
 
     def _merge_ridge(self, clips: Sequence[vs.VideoNode]) -> vs.VideoNode:
-        return core.std.Expr(clips, 'x y * 2 * -1 * x dup * z dup * 4 * + y dup * + + sqrt x y + +')
+        return core.std.Expr(clips, 'x 2 pow z 2 pow 4 * + x y * 2 * - y 2 pow + sqrt x y + + 0.5 *')
 
 
 class SingleMatrix(MatrixEdgeDetect, ABC):
