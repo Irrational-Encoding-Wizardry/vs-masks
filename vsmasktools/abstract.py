@@ -70,12 +70,6 @@ class DeferredMask(GeneralMask):
         assert check_variable(clip, self.get_mask)
         assert check_variable(ref, self.get_mask)
 
-        if self.bound:
-            bm = self.bound.get_mask(ref, **kwargs)
-
-            if self.blur:
-                bm = box_blur(bm, 5, 5)
-
         if self.refframes:
             hm = ref.std.BlankClip(
                 format=ref.format.replace(color_family=vs.GRAY, subsampling_h=0, subsampling_w=0).id, keep=True
@@ -100,6 +94,11 @@ class DeferredMask(GeneralMask):
             )
 
         if self.bound:
+            bm = self.bound.get_mask(hm, **kwargs)
+
+            if self.blur:
+                bm = box_blur(bm, 5, 5)
+
             return norm_expr([hm, bm], f'y {ExprOp.clamp(c="x")} 0 ?')
 
         return hm.std.Limiter()

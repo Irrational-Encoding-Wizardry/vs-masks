@@ -190,7 +190,7 @@ class HardsubSignFades(HardsubMask):
             [clipedge, refedge], f'x y - {highpass} < 0 {ExprToken.RangeMax} ?'
         ).std.Median()
 
-        return Morpho.inflate(Morpho.expand(mask, self.expand, mode=self.expand_mode), iterations=4)
+        return max_planes(Morpho.inflate(Morpho.expand(mask, self.expand, mode=self.expand_mode), iterations=4))
 
 
 class HardsubSign(HardsubMask):

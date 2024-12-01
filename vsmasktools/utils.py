@@ -8,7 +8,7 @@ from vsrgtools import box_blur, gauss_blur
 from vstools import (
     CustomValueError, FrameRangeN, FrameRangesN, FuncExceptT, P, check_ref_clip, check_variable,
     check_variable_format, core, depth, flatten, get_lowest_values, get_peak_values, insert_clip,
-    normalize_ranges, replace_ranges, split, vs
+    normalize_ranges, plane, replace_ranges, split, vs
 )
 
 from .abstract import GeneralMask
@@ -123,18 +123,34 @@ def squaremask(
             color=get_lowest_values(mask_format),
             keep=True
         )
-
-        mask = norm_expr(
-            base_clip, _get_region_expr(
-                clip, offset_x, clip.width - width - offset_x, offset_y, clip.height - height - offset_y,
+        exprs = [
+            _get_region_expr(
+                base_clip, offset_x, clip.width - width - offset_x, offset_y, clip.height - height - offset_y,
                 'range_max x' if invert else 'x range_max'
-            ), force_akarin=func
-        )
+            )
+        ]
+
+        if mask_format.num_planes > 1:
+            for i in range(1, mask_format.num_planes):
+                p = plane(base_clip, i)
+                ratio_x = p.width / base_clip.width
+                ratio_y = p.height / base_clip.height
+                exprs.append(
+                        _get_region_expr(
+                        p,
+                        int(offset_x * ratio_x), int((clip.width - width - offset_x) * ratio_x),
+                        int(offset_y * ratio_y), int((clip.height - height - offset_y) * ratio_y),
+                        'range_max x' if invert else 'x range_max'
+                    )
+                )
+
+        mask = norm_expr(base_clip, tuple(exprs), force_akarin=func)
     else:
         base_clip = clip.std.BlankClip(width, height, mask_format.id, 1, color=get_peak_values(mask_format), keep=True)
 
         mask = base_clip.std.AddBorders(
-            offset_x, clip.width - width - offset_x, offset_y, clip.height - height - offset_y
+            offset_x, clip.width - width - offset_x, offset_y, clip.height - height - offset_y,
+            [0] * mask_format.num_planes
         )
         if invert:
             mask = mask.std.Invert()
