@@ -42,17 +42,19 @@ def adg_mask(
 
     assert check_variable(clip, func)
 
-    luma, prop = plane(clip, 0), 'P' if complexpr_available else None
+    use_complex = complexpr_available and clip.format.bits_per_sample > 16
+
+    luma, prop = plane(clip, 0), 'P' if use_complex else None
     y, y_inv = luma.std.PlaneStats(prop=prop), luma.std.Invert().std.PlaneStats(prop=prop)
 
-    if not complexpr_available and relative:
+    if not use_complex and relative:
         raise CustomRuntimeError(
             "You don't have akarin plugin, you can't use this function!", func, 'relative=True'
         )
 
     assert y.format
 
-    if complexpr_available:
+    if use_complex:
         peak = get_peak_value(y)
 
         is_integer = y.format.sample_type == vs.INTEGER
