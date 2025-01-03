@@ -384,8 +384,8 @@ class Max(MatrixEdgeDetect, ABC):
         raise NotImplementedError
 
 
-EdgeDetectT: TypeAlias = type[EdgeDetect] | EdgeDetect | str  # type: ignore
-RidgeDetectT: TypeAlias = type[RidgeDetect] | RidgeDetect | str  # type: ignore
+EdgeDetectT: TypeAlias = type[EdgeDetect] | EdgeDetect | str
+RidgeDetectT: TypeAlias = type[RidgeDetect] | RidgeDetect | str
 
 
 def get_all_edge_detects(

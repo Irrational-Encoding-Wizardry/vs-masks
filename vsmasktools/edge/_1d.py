@@ -138,7 +138,7 @@ class TEdgeTedgemask(Matrix1D, EdgeDetect):
     """(tedgemask.TEdgeMask(threshold=0.0, type=2)) Vapoursynth plugin."""
 
     def _compute_edge_mask(self, clip: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
-        return clip.tedgemask.TEdgeMask(threshold=0, type=2)  # type: ignore
+        return clip.tedgemask.TEdgeMask(threshold=0, type=2)
 
 
 class SavitzkyGolay(EuclideanDistance, Matrix1D):

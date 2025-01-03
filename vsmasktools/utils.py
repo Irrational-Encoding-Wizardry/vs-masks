@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Concatenate, Iterable
+from typing import Any, Callable, Concatenate, Iterable, overload
 
 from vsexprtools import ExprOp, complexpr_available, norm_expr
 from vskernels import Bilinear, Kernel, KernelT
 from vsrgtools import box_blur, gauss_blur
 from vstools import (
-    CustomValueError, ColorRange, FrameRangeN, FrameRangesN, FuncExceptT, P, check_ref_clip, check_variable,
-    check_variable_format, core, depth, flatten, get_lowest_values, get_peak_values, insert_clip,
-    normalize_ranges, plane, replace_ranges, split, vs
+    ColorRange, CustomValueError, FrameRangeN, FrameRangesN, FuncExceptT, P, check_ref_clip,
+    check_variable, check_variable_format, core, depth, flatten, get_lowest_values, get_peak_values,
+    insert_clip, normalize_ranges, plane, replace_ranges, split, vs
 )
 
 from .abstract import GeneralMask
-from .edge import EdgeDetect, RidgeDetect
+from .edge import EdgeDetect, EdgeDetectT, RidgeDetect, RidgeDetectT
 from .types import GenericMaskT
 
 __all__ = [
@@ -227,32 +227,60 @@ def freeze_replace_squaremask(
     return insert_clip(mask, masked_insert * (end - start + 1), start)
 
 
+@overload
+def normalize_mask(mask: vs.VideoNode, clip: vs.VideoNode) -> vs.VideoNode:
+    ...
+
+
+@overload
+def normalize_mask(
+    mask: Callable[[vs.VideoNode, vs.VideoNode], vs.VideoNode], clip: vs.VideoNode, ref: vs.VideoNode
+) -> vs.VideoNode:
+    ...
+
+
+@overload
+def normalize_mask(
+    mask: EdgeDetectT | RidgeDetectT, clip: vs.VideoNode, *, ridge: bool = ..., **kwargs: Any
+) -> vs.VideoNode:
+    ...
+
+
+@overload
+def normalize_mask(mask: GeneralMask, clip: vs.VideoNode, ref: vs.VideoNode) -> vs.VideoNode:
+    ...
+
+
+@overload
+def normalize_mask(
+    mask: GenericMaskT, clip: vs.VideoNode, ref: vs.VideoNode | None = ..., *, ridge: bool = ..., **kwargs: Any
+) -> vs.VideoNode:
+    ...
+
+
 def normalize_mask(
     mask: GenericMaskT, clip: vs.VideoNode, ref: vs.VideoNode | None = None,
     *, ridge: bool = False, **kwargs: Any
 ) -> vs.VideoNode:
-    if isinstance(mask, str):
-        mask = EdgeDetect.ensure_obj(mask)
-
-    if isinstance(mask, type):
-        mask = mask()
-
-    if isinstance(mask, RidgeDetect) and ridge:
-        mask = mask.ridgemask(clip, **kwargs)
+    if isinstance(mask, (str, type)):
+        return normalize_mask(EdgeDetect.ensure_obj(mask, normalize_mask), clip, ref, ridge=ridge, **kwargs)
 
     if isinstance(mask, EdgeDetect):
-        mask = mask.edgemask(clip, **kwargs)
-
-    if isinstance(mask, GeneralMask):
-        mask = mask.get_mask(clip, ref)
-
-    if callable(mask):
+        if ridge and isinstance(mask, RidgeDetect):
+            cmask = mask.ridgemask(clip, **kwargs)
+        else:
+            cmask = mask.edgemask(clip, **kwargs)
+    elif isinstance(mask, GeneralMask):
+        cmask = mask.get_mask(clip, ref)
+    elif callable(mask):
         if ref is None:
             raise CustomValueError('This mask function requires a ref to be specified!')
 
-        mask = mask(clip, ref)
+        cmask = mask(clip, ref)
+    else:
+        cmask = mask
 
-    return depth(mask, clip, range_in=ColorRange.FULL, range_out=ColorRange.FULL)
+    return depth(cmask, clip, range_in=ColorRange.FULL, range_out=ColorRange.FULL)
 
 
 def rekt_partial(

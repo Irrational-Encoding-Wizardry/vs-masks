@@ -37,7 +37,7 @@ class XxpandMode(CustomEnum):
     """Diamond shape"""
 
 
-class Coordinates(list[int], CustomEnum):
+class Coordinates(list[int], CustomEnum):  # type: ignore[misc]
     VERTICAL = [0, 1, 0, 0, 0, 0, 1, 0]
     HORIZONTAL = [0, 0, 0, 1, 1, 0, 0, 0]
     RECTANGLE = [1, 1, 1, 1, 1, 1, 1, 1]

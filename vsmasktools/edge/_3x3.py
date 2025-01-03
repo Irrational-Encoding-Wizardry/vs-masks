@@ -189,7 +189,7 @@ class ScharrTCanny(Matrix3x3, EdgeDetect):
     """H. Scharr optimised TCanny Vapoursynth plugin operator."""
 
     def _compute_edge_mask(self, clip: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
-        return clip.tcanny.TCanny(op=2, **(KwargsT(sigma=0, mode=1, scale=4 / 3) | kwargs))  # type: ignore
+        return clip.tcanny.TCanny(op=2, **(KwargsT(sigma=0, mode=1, scale=4 / 3) | kwargs))
 
 
 class Kroon(RidgeDetect, EuclideanDistance, Matrix3x3):
@@ -206,7 +206,7 @@ class KroonTCanny(Matrix3x3, EdgeDetect):
     """Dirk-Jan Kroon TCanny Vapoursynth plugin operator."""
 
     def _compute_edge_mask(self, clip: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
-        return clip.tcanny.TCanny(op=4, **(KwargsT(mode=1, scale=1 / 17) | kwargs))  # type: ignore
+        return clip.tcanny.TCanny(op=4, **(KwargsT(mode=1, scale=1 / 17) | kwargs))
 
 
 class FreyChen(MatrixEdgeDetect):

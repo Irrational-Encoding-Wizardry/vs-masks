@@ -66,7 +66,7 @@ class DeferredMask(GeneralMask):
                 self.__class__, '', 'Received reference frame and range list size mismatch!'
             )
 
-    def get_mask(self, clip: vs.VideoNode, ref: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:  # type: ignore[override]
+    def get_mask(self, clip: vs.VideoNode, ref: vs.VideoNode, **kwargs: Any) -> vs.VideoNode:
         assert check_variable(clip, self.get_mask)
         assert check_variable(ref, self.get_mask)
 
