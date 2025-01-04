@@ -120,7 +120,7 @@ def squaremask(
     if complexpr_available:
         base_clip = clip.std.BlankClip(
             None, None, mask_format.id, 1,
-            color=get_lowest_values(mask_format),
+            color=get_lowest_values(mask_format, ColorRange.FULL),
             keep=True
         )
         exprs = [
@@ -146,7 +146,9 @@ def squaremask(
 
         mask = norm_expr(base_clip, tuple(exprs), force_akarin=func)
     else:
-        base_clip = clip.std.BlankClip(width, height, mask_format.id, 1, color=get_peak_values(mask_format), keep=True)
+        base_clip = clip.std.BlankClip(
+            width, height, mask_format.id, 1, color=get_peak_values(mask_format, ColorRange.FULL), keep=True
+        )
 
         mask = base_clip.std.AddBorders(
             offset_x, clip.width - width - offset_x, offset_y, clip.height - height - offset_y,

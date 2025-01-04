@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Sequence
 
-from vsexprtools import ExprOp, norm_expr
+from vsexprtools import ExprOp
 from vsrgtools import box_blur
 from vstools import (
     ColorRange, FrameRangeN, FrameRangesN, FramesLengthError, Position, Size,
@@ -99,7 +99,7 @@ class DeferredMask(GeneralMask):
             if self.blur:
                 bm = box_blur(bm, 5, 5)
 
-            return norm_expr([hm, bm], f'y {ExprOp.clamp(c="x")} 0 ?')
+            hm = hm.std.BlankClip(keep=True).std.MaskedMerge(hm, bm)
 
         return hm.std.Limiter()
 
