@@ -1,27 +1,18 @@
 from __future__ import annotations
 
-from typing import Callable, Protocol, Union
+from typing import Callable, Union
 
-from vstools import CustomEnum, PlanesT, SingleOrArrOpt, vs
+from vstools import CustomEnum, vs
 
 from .abstract import GeneralMask
 from .edge._abstract import EdgeDetectT, RidgeDetectT
 
 __all__ = [
-    'MorphoFunc',
     'XxpandMode',
     'Coordinates',
 
     'GenericMaskT'
 ]
-
-
-class MorphoFunc(Protocol):
-    def __call__(
-        self, clip: vs.VideoNode, planes: PlanesT = ...,
-        threshold: float | None = ..., coordinates: SingleOrArrOpt[int] = ...
-    ) -> vs.VideoNode:
-        ...
 
 
 class XxpandMode(CustomEnum):
