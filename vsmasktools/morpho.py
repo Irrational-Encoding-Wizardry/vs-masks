@@ -52,38 +52,9 @@ def _xxpand_method(
     raise NotImplementedError
 
 
-@dataclass
 class Morpho:
-    planes: PlanesT = None
-    func: FuncExceptT | None = None
-    fast: bool | None = None
-
-    def __post_init__(self) -> None:
-        self._fast = fallback(self.fast, complexpr_available) and complexpr_available
-
-    def _check_params(
-        self, radius: int, thr: float | None, coords: CoordsT, planes: PlanesT, func: FuncExceptT
-    ) -> tuple[FuncExceptT, PlanesT]:
-        if radius < 1:
-            raise CustomIndexError('radius has to be greater than 0!', func, radius)
-
-        if isinstance(coords, (int, tuple)):
-            size = coords if isinstance(coords, int) else coords[0]
-
-            if size < 2:
-                raise CustomIndexError('when int or tuple, coords has to be greater than 1!', func, coords)
-
-            if not self._fast and size != 3:
-                raise CustomIndexError(
-                    'with fast=False or no akarin plugin, you must have coords=3!', func, coords
-                )
-        elif len(coords) != 8:
-            raise CustomIndexError('when a list, coords must contain exactly 8 numbers!', func, coords)
-
-        if thr is not None and thr < 0.0:
-            raise CustomIndexError('thr must be a positive number!', func, coords)
-
-        return self.func or func, self.planes if planes is None else planes
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        ...
 
     @classmethod
     def _morpho_xx_imum(
