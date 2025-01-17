@@ -1,49 +1,55 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from itertools import zip_longest
-from math import floor, sqrt
-from typing import Any, Literal, Sequence, Tuple
+from math import sqrt
+from typing import Any, Literal, Sequence, cast
 
 from vsexprtools import ExprList, ExprOp, ExprToken, complexpr_available, norm_expr
 from vsrgtools import BlurMatrix
 from vstools import (
-    ConvMode, CustomIndexError, FuncExceptT, PlanesT, StrList, check_variable, copy_signature, core, fallback,
-    inject_self, interleave_arr, iterate, scale_value, to_arr, vs
+    ConvMode, CustomValueError, FuncExceptT, PlanesT, SpatialConvModeT, VSFunctionAllArgs,
+    copy_signature, core, fallback, inject_self, iterate, scale_mask, scale_value, to_arr, vs
 )
 
-from .types import Coordinates, MorphoFunc, XxpandMode
+from .types import Coordinates, XxpandMode
 
 __all__ = [
-    'Morpho', 'CoordsT',
+    'RadiusT',
+    'Morpho',
     'grow_mask'
 ]
 
-CoordsT = int | Tuple[int, ConvMode] | Sequence[int]
+RadiusT = int | tuple[int, SpatialConvModeT]
 
 
-def _minmax_method(  # type: ignore
-    self: Morpho, src: vs.VideoNode, thr: float | None = None,
-    coords: CoordsT | None = [1] * 8,
-    iterations: int = 1, multiply: float | None = None, planes: PlanesT = None,
-    *, func: FuncExceptT | None = None, **kwargs: Any
+def _morpho_method(
+    self: Morpho,
+    clip: vs.VideoNode,
+    radius: RadiusT = 1,
+    thr: float | None = None,
+    iterations: int = 1,
+    coords: Sequence[int] | None = None,
+    multiply: float | None = None,
+    planes: PlanesT = None,
+    *,
+    func: FuncExceptT | None = None,
+    **kwargs: Any
 ) -> vs.VideoNode:
-    ...
+    raise NotImplementedError
 
 
-def _morpho_method(  # type: ignore
-    self: Morpho, src: vs.VideoNode, radius: int = 1, planes: PlanesT = None, thr: float | None = None,
-    coords: CoordsT = 5, multiply: float | None = None,
-    *, func: FuncExceptT | None = None, **kwargs: Any
+def _xxpand_method(
+    self: Morpho,
+    clip: vs.VideoNode,
+    sw: int, sh: int | None = None,
+    mode: XxpandMode = XxpandMode.RECTANGLE,
+    thr: float | None = None,
+    planes: PlanesT = None,
+    *,
+    func: FuncExceptT | None = None,
+    **kwargs: Any
 ) -> vs.VideoNode:
-    ...
-
-
-def _morpho_method2(  # type: ignore
-    self: Morpho, clip: vs.VideoNode, sw: int, sh: int | None = None, mode: XxpandMode = XxpandMode.RECTANGLE,
-    thr: float | None = None, planes: PlanesT = None, *, func: FuncExceptT | None = None, **kwargs: Any
-) -> vs.VideoNode:
-    ...
+    raise NotImplementedError
 
 
 @dataclass
