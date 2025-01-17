@@ -4,7 +4,7 @@ from itertools import zip_longest
 from math import sqrt
 from typing import Any, Literal, Sequence, cast
 
-from vsexprtools import ExprList, ExprOp, ExprToken, complexpr_available, norm_expr
+from vsexprtools import ExprList, ExprOp, TupleExprList, complexpr_available, norm_expr
 from vsrgtools import BlurMatrix
 from vstools import (
     ConvMode, CustomValueError, FuncExceptT, PlanesT, SpatialConvModeT, VSFunctionAllArgs,
@@ -58,100 +58,101 @@ class Morpho:
 
     @classmethod
     def _morpho_xx_imum(
-        cls, src: vs.VideoNode, thr: float | None, op: Literal[ExprOp.MIN, ExprOp.MAX],
-        coords: CoordsT, multiply: float | None = None, clamp: bool = False
-    ) -> StrList:
-        exclude = list[tuple[int, int]]()
-
-        if isinstance(coords, (int, tuple)):
-            if isinstance(coords, tuple):
-                size, mode = coords
-            else:
-                size, mode = coords, ConvMode.HV
-
-            assert size > 1
-
-            radius = size // 2
-
-            if size % 2 == 0:
-                exclude.extend((x, radius) for x in range(-radius, radius + 1))
-                exclude.append((radius, radius - 1))
+        cls,
+        clip: vs.VideoNode,
+        radius: tuple[int, ConvMode],
+        thr: float | None,
+        coords: Sequence[int] | None,
+        multiply: float | None,
+        clamp: bool,
+        *,
+        op: Literal[ExprOp.MIN, ExprOp.MAX],
+        func: FuncExceptT
+    ) -> TupleExprList:
+        if coords:
+            _, expr = cls._get_matrix_from_coords(coords, func)
         else:
-            coords = list(coords)
-            coords.insert(len(coords) // 2, 1)
-            radius, mode = floor(sqrt(len(coords)) / 2), ConvMode.HV
+            expr = ExprOp.matrix('x', *radius, [(0, 0)])
 
-        matrix = ExprOp.matrix('x', radius, mode, exclude)
+        for e in expr:
+            e.extend([op] * e.mlength)
 
-        if not isinstance(coords, (int, tuple)):
-            matrix = ExprList([x for x, coord in zip(matrix, coords) if coord])
-
-        matrix = ExprList(interleave_arr(matrix, op * matrix.mlength, 2))
-
-        if thr is not None:
-            matrix.append('x', scale_value(thr, 32, src), ExprOp.SUB, ExprOp.MAX)
-
-        if multiply is not None:
-            matrix.append(multiply, ExprOp.MUL)
-
-        if clamp:
-            matrix.append(ExprOp.clamp())
-
-        return matrix
-
-    def _mm_func(
-        self, src: vs.VideoNode, radius: int = 1, planes: PlanesT = None, thr: float | None = None,
-        coords: CoordsT = 5, multiply: float | None = None, *, func: FuncExceptT,
-        mm_func: MorphoFunc, op: Literal[ExprOp.MIN, ExprOp.MAX], **kwargs: Any
-    ) -> vs.VideoNode:
-        func, planes = self._check_params(radius, thr, coords, planes, func)
-
-        if self._fast:
-            mm_func = norm_expr  # type: ignore[assignment]
-            kwargs.update(expr=self._morpho_xx_imum(src, thr, op, coords, multiply))
-        elif isinstance(coords, (int, tuple)):
-            if isinstance(coords, tuple):
-                if coords[1] is not ConvMode.HV:
-                    raise CustomIndexError(
-                        'with fast=False or no akarin plugin, you must have ConvMode.HV!', func, coords
-                    )
-
-                coords = coords[0]
-
-            if coords != 3:
-                raise CustomIndexError(
-                    'with fast=False or no akarin plugin, you must have coords=3!', func, coords
-                )
-
-            kwargs.update(coordinates=[1] * 8)
-
-        if not self._fast:
             if thr is not None:
-                kwargs.update(threshold=scale_value(thr, 32, src))
+                e.append("x", scale_value(thr, 32, clip))
+                limit = (ExprOp.SUB, ExprOp.MAX) if op == ExprOp.MIN else (ExprOp.ADD, ExprOp.MIN)
+                e.append(*limit)
 
             if multiply is not None:
-                orig_mm_func = mm_func
+                e.append(multiply, ExprOp.MUL)
 
-                @copy_signature(mm_func)
-                def _mm_func(*args: Any, **kwargs: Any) -> Any:
-                    return orig_mm_func(*args, **kwargs).std.Expr(f'x {multiply} *')
+            if clamp:
+                e.append(ExprOp.clamp())
 
-                mm_func = _mm_func
+        return expr
 
-        return iterate(src, mm_func, radius, planes=planes, **kwargs)
-
-    @inject_self
-    def xxpand_transform(
-        self, clip: vs.VideoNode, op: Literal[ExprOp.MIN, ExprOp.MAX], sw: int, sh: int | None = None,
-        mode: XxpandMode = XxpandMode.RECTANGLE, thr: float | None = None,
-        planes: PlanesT = None, *, func: FuncExceptT | None = None
+    def _mm_func(
+        self,
+        clip: vs.VideoNode,
+        radius: RadiusT = 1,
+        thr: float | None = None,
+        iterations: int = 1,
+        coords: Sequence[int] | None = None,
+        multiply: float | None = None,
+        planes: PlanesT = None,
+        *,
+        func: FuncExceptT,
+        mm_func: VSFunctionAllArgs,
+        op: Literal[ExprOp.MIN, ExprOp.MAX],
+        **kwargs: Any
     ) -> vs.VideoNode:
-        func, planes = self._check_params(1, thr, 3, planes, func or self.xxpand_transform)
+        if isinstance(radius, tuple):
+            radius, conv_mode = radius
+        else:
+            conv_mode = ConvMode.SQUARE
 
+        if not complexpr_available:
+            if radius > 1:
+                raise CustomValueError('If akarin plugin is not available, you must have radius=1', func, radius)
+
+            if not coords:
+                match conv_mode:
+                    case ConvMode.VERTICAL:
+                        coords = Coordinates.VERTICAL
+                    case ConvMode.HORIZONTAL:
+                        coords = Coordinates.HORIZONTAL
+                    case ConvMode.HV:
+                        coords = Coordinates.DIAMOND
+                    case _:
+                        coords = Coordinates.RECTANGLE
+
+            if thr is not None:
+                kwargs.update(threshold=scale_mask(thr, 32, clip))
+
+            kwargs.update(coordinates=coords, planes=planes)
+
+            if multiply is not None:
+                mm_func = self._multiply_mm_func(mm_func, multiply)
+        else:
+            mm_func = cast(VSFunctionAllArgs, norm_expr)
+            kwargs.update(
+                expr=self._morpho_xx_imum(clip, (radius, conv_mode), thr, coords, multiply, False, op=op, func=func)
+            )
+
+        return iterate(clip, mm_func, iterations, **kwargs)
+
+    def _xxpand_transform(
+        self,
+        clip: vs.VideoNode,
+        sw: int, sh: int | None = None,
+        mode: XxpandMode = XxpandMode.RECTANGLE,
+        thr: float | None = None,
+        planes: PlanesT = None,
+        *,
+        op: Literal[ExprOp.MIN, ExprOp.MAX],
+        func: FuncExceptT,
+        **kwargs: Any
+    ) -> vs.VideoNode:
         sh = fallback(sh, sw)
-
-        if op not in {ExprOp.MIN, ExprOp.MAX}:
-            raise NotImplementedError
 
         function = self.maximum if op is ExprOp.MAX else self.minimum
 
@@ -165,38 +166,102 @@ class Morpho:
             else:
                 break
 
-            clip = function(clip, thr, coords, planes=planes, func=func)
+            clip = function(clip, thr, 1, coords, planes=planes, func=func, **kwargs)
 
         return clip
 
     def _xxflate(
-        self: Morpho, inflate: bool, src: vs.VideoNode, radius: int, planes: PlanesT, thr: float | None,
-        multiply: float | None, *, func: FuncExceptT
+        self,
+        clip: vs.VideoNode,
+        radius: RadiusT = 1,
+        thr: float | None = None,
+        iterations: int = 1,
+        coords: Sequence[int] | None = None,
+        multiply: float | None = None,
+        planes: PlanesT = None,
+        *,
+        func: FuncExceptT,
+        inflate: bool,
+        **kwargs: Any
     ) -> vs.VideoNode:
-        assert check_variable(src, func)
+        if isinstance(radius, tuple):
+            radius, conv_mode = radius
+        else:
+            conv_mode = ConvMode.SQUARE
 
-        expr = ExprOp.matrix('x', radius, exclude=[(0, 0)])
+        xxflate_func: VSFunctionAllArgs
 
-        conv_len = len(expr)
+        if not complexpr_available:
+            if radius > 1 or conv_mode != ConvMode.SQUARE:
+                raise CustomValueError(
+                    'If akarin plugin is not available, you must have radius=1 and ConvMode.SQUARE',
+                    func, (radius, conv_mode)
+                )
 
-        expr.append(ExprOp.ADD * expr.mlength)
+            if coords:
+                raise CustomValueError(
+                    "If akarin plugin is not available, you can't have custom coordinates", func, coords
+                )
 
-        if src.format.sample_type is vs.INTEGER:
-            expr.append(radius * 4, ExprOp.ADD)
+            xxflate_func = core.std.Inflate if inflate else core.std.Deflate
+            kwargs.update(planes=planes)
 
-        expr.append(conv_len, ExprOp.DIV)
-        expr.append('x', ExprOp.MAX if inflate else ExprOp.MIN)
+            if thr is not None:
+                kwargs.update(threshold=scale_mask(thr, 32, clip))
 
-        if thr is not None:
-            thr = scale_value(thr, 32, src)
-            limit = ['x', thr, ExprOp.ADD] if inflate else ['x', thr, ExprOp.SUB, ExprToken.RangeMin, ExprOp.MAX]
+            if multiply is not None:
+                xxflate_func = self._multiply_mm_func(xxflate_func, multiply)
+        else:
+            if coords:
+                radius, expr = self._get_matrix_from_coords(coords, func)
+            else:
+                expr = ExprOp.matrix('x', radius, conv_mode, exclude=[(0, 0)])
 
-            expr.append(limit, ExprOp.MIN if inflate else ExprOp.MAX)
+            for e in expr:
+                e.append(ExprOp.ADD * e.mlength, len(e), ExprOp.DIV, 'x', ExprOp.MAX if inflate else ExprOp.MIN)
 
-        if multiply is not None:
-            expr.append(multiply, ExprOp.MUL)
+                if thr is not None:
+                    thr = scale_value(thr, 32, clip)
+                    limit = ['x', thr, ExprOp.ADD, ExprOp.MIN] if inflate else ['x', thr, ExprOp.SUB, ExprOp.MAX]
+                    e.append(limit)
 
-        return norm_expr(src, expr, planes)
+                if multiply is not None:
+                    e.append(multiply, ExprOp.MUL)
+
+            kwargs.update(expr=expr)
+
+            xxflate_func = cast(VSFunctionAllArgs, norm_expr)
+
+        return iterate(clip, xxflate_func, iterations, **kwargs)
+
+    def _multiply_mm_func(self, func: VSFunctionAllArgs, multiply: float) -> VSFunctionAllArgs:
+        def mm_func(clip: vs.VideoNode, *args: Any, **kwargs: Any) -> vs.VideoNode:
+            return func(clip, *args, **kwargs).std.Expr(f'x {multiply} *')
+        return mm_func
+
+    @staticmethod
+    def _get_matrix_from_coords(coords: Sequence[int], func: FuncExceptT) -> tuple[int, TupleExprList]:
+        lc = len(coords)
+
+        if lc < 8:
+            raise CustomValueError('coords must have more than 8 elements!', func, coords)
+
+        sq_lc = sqrt(lc + 1)
+
+        if not (sq_lc.is_integer() and sq_lc % 2 != 0):
+            raise CustomValueError(
+                'coords must contain exactly (radius * 2 + 1) ** 2 - 1 numbers.\neg. 8, 24, 48...', func, coords
+            )
+
+        coords = list(coords)
+        coords.insert(lc // 2, 1)
+
+        r = int(sq_lc // 2)
+
+        expr, = ExprOp.matrix("x", r, ConvMode.SQUARE, exclude=[(0, 0)])
+        expr = ExprList([x for x, coord in zip(expr, coords) if coord])
+
+        return r, TupleExprList([expr])
 
     @inject_self
     @copy_signature(_minmax_method)
