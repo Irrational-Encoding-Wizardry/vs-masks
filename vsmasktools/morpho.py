@@ -585,6 +585,11 @@ class Morpho:
             [clip, opened], 'x y -', kwargs.get('planes', args[5] if len(args) > 5 else None), func=func
         )
 
+    @copy_signature(top_hat)
+    @inject_self
+    def white_hate(self, *args: Any, **kwargs: Any) -> vs.VideoNode:
+        return self.top_hat(*args, **dict(func=self.white_hate) | kwargs)
+
     @inject_self
     @copy_signature(_morpho_method)
     def bottom_hat(self, clip: vs.VideoNode, *args: Any, func: FuncExceptT | None = None, **kwargs: Any) -> vs.VideoNode:
@@ -615,6 +620,10 @@ class Morpho:
             [closed, clip], 'x y -', kwargs.get('planes', args[5] if len(args) > 5 else None), func=func
         )
 
+    @copy_signature(bottom_hat)
+    @inject_self
+    def black_hat(self, *args: Any, **kwargs: Any) -> vs.VideoNode:
+        return self.top_hat(*args, **dict(func=self.black_hat) | kwargs)
 
     @inject_self
     @copy_signature(_morpho_method)
