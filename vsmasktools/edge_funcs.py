@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import Any, Literal, Sequence, cast, overload
 
 from vsexprtools import ExprOp, ExprToken, norm_expr
-from vsrgtools import gauss_blur, BlurMatrix
+from vsrgtools import BlurMatrix, gauss_blur
 from vstools import (
-    ColorRange, CustomEnum, VSFunctionAllArgs, check_variable, depth, get_peak_value, get_y, plane,
-    scale_value, scale_mask, vs
+    ColorRange, ConvMode, CustomEnum, VSFunctionAllArgs, check_variable, depth, get_peak_value,
+    get_y, plane, scale_mask, scale_value, vs
 )
 
 from .details import multi_detail_mask
@@ -42,7 +42,7 @@ def ringing_mask(
         scale_mask(t, 32, clip) for t in [thmi, thma, thlimi, thlima]
     )
 
-    blur_kernel = BlurMatrix.BINOMIAL()
+    blur_kernel = BlurMatrix.BINOMIAL(1, mode=ConvMode.SQUARE)
 
     edgemask = normalize_mask(credit_mask, plane(clip, 0), **kwargs).std.Limiter()
 
@@ -54,7 +54,7 @@ def ringing_mask(
     shrink = blur_kernel(shrink, passes=2)
 
     strong = norm_expr(edgemask, f'x {thmi} - {thlima - thlimi} / {ExprToken.RangeMax} *')
-    expand = Morpho.dilation(strong, rad)
+    expand = Morpho.dilation(strong, iterations=rad)
 
     mask = norm_expr([expand, strong, shrink], 'x y z max -')
 
@@ -101,7 +101,7 @@ def tcanny_retinex(
 
     tcunnied = msrcp.tcanny.TCanny(mode=1, sigma=1)
 
-    return Morpho.minimum(tcunnied, None, Coordinates.CORNERS)
+    return Morpho.minimum(tcunnied, coords=Coordinates.CORNERS)
 
 
 def limited_linemask(
@@ -141,14 +141,14 @@ class _dre_edgemask(CustomEnum):
 
     @overload
     def __call__(  # type: ignore
-        self: Literal[RETINEX], src: vs.VideoNode, tsigma: float = 1, brz: float = 0.122,
+        self: Literal[_dre_edgemask.RETINEX], src: vs.VideoNode, tsigma: float = 1, brz: float = 0.122,
         *, sigmas: Sequence[float] = [50, 200, 350]
     ) -> vs.VideoNode:
         ...
 
     @overload
     def __call__(  # type: ignore
-        self: Literal[CLAHE], src: vs.VideoNode, tsigma: float = 1, brz: float = 0.122,
+        self: Literal[_dre_edgemask.CLAHE], src: vs.VideoNode, tsigma: float = 1, brz: float = 0.122,
         *, limit: float = 0.0305, tile: int = 5
     ) -> vs.VideoNode:
         ...

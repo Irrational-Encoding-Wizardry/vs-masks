@@ -97,13 +97,13 @@ def credit_mask(
         ampl=ExLaplacian4, expand=4
     )
 
-    credit_mask = Morpho.erosion(credit_mask, 6)
+    credit_mask = Morpho.erosion(credit_mask, iterations=6)
     credit_mask = iterate(credit_mask, lambda x: x.std.Minimum().std.Maximum(), 8)
 
     if expand:
-        credit_mask = Morpho.dilation(credit_mask, expand)
+        credit_mask = Morpho.dilation(credit_mask, iterations=expand)
 
-    credit_mask = Morpho.inflate(credit_mask, 3)
+    credit_mask = Morpho.inflate(credit_mask, iterations=3)
 
     return credit_mask
 
