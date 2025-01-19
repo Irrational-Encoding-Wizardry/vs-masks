@@ -710,8 +710,8 @@ class Morpho:
                 'coords must contain exactly (radius * 2 + 1) ** 2 - 1 numbers.\neg. 8, 24, 48...', func, coords
             )
 
-        coords = list(coords)
-        coords.insert(lc // 2, 1)
+        matrix = list(coords)
+        matrix.insert(lc // 2, 0)
 
         r = int(sq_lc // 2)
 
