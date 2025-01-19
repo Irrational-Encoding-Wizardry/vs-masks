@@ -737,9 +737,9 @@ def grow_mask(
 
     morpho = Morpho()
 
-    closed = morpho.closing(clip, radius, thr, iterations, coords, multiply, planes, func=func, **kwargs)
-    dilated = morpho.dilation(closed, radius, thr, iterations, coords, multiply, planes, func=func, **kwargs)
-    outer = morpho.outer_hat(dilated, radius, thr, iterations, coords, multiply, planes, func=func, **kwargs)
+    closed = morpho.closing(clip, radius, thr, 1, coords, None, planes, func=func, **kwargs)
+    dilated = morpho.dilation(closed, radius, thr, 1, coords, None, planes, func=func, **kwargs)
+    outer = morpho.outer_hat(dilated, radius, thr, iterations, coords, None, planes, func=func, **kwargs)
 
     blurred = BlurMatrix.BINOMIAL()(outer, planes=planes)
 
