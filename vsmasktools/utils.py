@@ -7,8 +7,8 @@ from vskernels import Bilinear, Kernel, KernelT
 from vsrgtools import box_blur, gauss_blur
 from vstools import (
     ColorRange, CustomValueError, FrameRangeN, FrameRangesN, FuncExceptT, P, check_ref_clip,
-    check_variable, check_variable_format, core, depth, flatten, get_lowest_values, get_peak_values,
-    insert_clip, normalize_ranges, plane, replace_ranges, split, vs
+    check_variable, check_variable_format, core, depth, flatten, get_lowest_value, get_lowest_values,
+    get_peak_value, get_peak_values, insert_clip, normalize_ranges, plane, replace_ranges, split, vs
 )
 
 from .abstract import GeneralMask
@@ -117,16 +117,28 @@ def squaremask(
     if offset_x + width > clip.width or offset_y + height > clip.height:
         raise CustomValueError('mask exceeds clip size!')
 
+    if force_gray:
+        low = get_lowest_value(mask_format, ColorRange.FULL)
+        peak = get_peak_value(mask_format, ColorRange.FULL)
+    else:
+        low = get_lowest_values(mask_format, ColorRange.FULL)
+        peak = get_peak_values(mask_format, ColorRange.FULL)
+
+    prim_color, sec_color = (low, peak) if invert else (peak, low)
+
     if complexpr_available:
+        range_expr = 'range_max x' if invert else 'range_min x'
+
         base_clip = clip.std.BlankClip(
             None, None, mask_format.id, 1,
-            color=get_lowest_values(mask_format, ColorRange.FULL),
+            color=prim_color,
             keep=True
         )
         exprs = [
             _get_region_expr(
-                base_clip, offset_x, clip.width - width - offset_x, offset_y, clip.height - height - offset_y,
-                'range_max x' if invert else 'x range_max'
+                base_clip, offset_x, clip.width - width - offset_x,
+                offset_y, clip.height - height - offset_y,
+                range_expr
             )
         ]
 
@@ -140,22 +152,21 @@ def squaremask(
                         p,
                         int(offset_x * ratio_x), int((clip.width - width - offset_x) * ratio_x),
                         int(offset_y * ratio_y), int((clip.height - height - offset_y) * ratio_y),
-                        'range_max x' if invert else 'x range_max'
+                        range_expr
                     )
                 )
 
         mask = norm_expr(base_clip, tuple(exprs), force_akarin=func)
     else:
         base_clip = clip.std.BlankClip(
-            width, height, mask_format.id, 1, color=get_peak_values(mask_format, ColorRange.FULL), keep=True
+            width, height, mask_format.id, 1, color=sec_color, keep=True
         )
 
         mask = base_clip.std.AddBorders(
-            offset_x, clip.width - width - offset_x, offset_y, clip.height - height - offset_y,
-            [0] * mask_format.num_planes
+            offset_x, clip.width - width - offset_x,
+            offset_y, clip.height - height - offset_y,
+            prim_color
         )
-        if invert:
-            mask = mask.std.Invert()
 
     if clip.num_frames == 1:
         return mask
