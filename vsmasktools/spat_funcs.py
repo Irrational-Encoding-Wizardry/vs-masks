@@ -130,7 +130,7 @@ def retinex(
     expr_msr.extend(ExprOp.ADD * slenm)
     expr_msr.append(f"log {slen} /")
 
-    msr = norm_expr([luma_float, (gauss_blur(luma_float, i) for i in sigma)], expr_msr)
+    msr = norm_expr([luma_float, (gauss_blur(luma_float, i, _fast=fast) for i in sigma)], expr_msr)
 
     msr_stats = msr.vszip.PlaneMinMax(lower_thr, upper_thr)
 
