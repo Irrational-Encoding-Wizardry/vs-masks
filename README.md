@@ -1,16 +1,17 @@
 # vs-masktools
 
+> [!CAUTION]
+> This package is deprecated!
+> Please use https://github.com/Jaded-Encoding-Thaumaturgy/vs-jetpack instead.
+
 vs-masktools aims to provide tools and functions to manage, create, and manipulate masks in VapourSynth.
 
 For support you can check out the [JET Discord server](https://discord.gg/XTpc6Fa9eB). <br><br>
 
 # Installation
+**This package is deprecated!**
 
-vs-masktools is available on PyPi and can be installed with this simple command:
-
-```
-pip install vsmasktools
-```
+Please install https://pypi.org/p/vsjetpack instead.
 
 # Dependencies
 
